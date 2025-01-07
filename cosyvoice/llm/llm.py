@@ -226,6 +226,11 @@ class Qwen2Encoder(torch.nn.Module):
 
     def forward_one_step(self, xs, masks, cache=None):
         input_masks = masks[:, -1, :]
+        #aa = torch.rand(size=(1, 154, 896)).cuda()
+        #bb = torch.ones(154, dtype=torch.bool).cuda()
+        #bb = bb.unsqueeze(0)
+
+        #import pdb; pdb.set_trace()
         outs = self.model(
             inputs_embeds=xs,
             attention_mask=input_masks,
