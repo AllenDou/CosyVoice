@@ -132,9 +132,11 @@ class CosyVoice2(CosyVoice):
         self.fp16 = fp16
         if not os.path.exists(model_dir):
             model_dir = snapshot_download(model_dir)
-        #import pdb; pdb.set_trace();
         with open('{}/cosyvoice.yaml'.format(model_dir), 'r') as f:
             configs = load_hyperpyyaml(f, overrides={'qwen_pretrain_path': os.path.join(model_dir, 'CosyVoice-BlankEN')})
+            # 通过 load_hyperpyyaml 读yaml配置, load配置里的模型, 赋值给configs里的变量, 后续在赋值给 self.model.llm等
+            # 这个self.model.llm是cosyvoice自己的模型. self.model.llm.llm是qwen标准模型.
+        #import pdb; pdb.set_trace();
         assert get_model_type(configs) == CosyVoice2Model, 'do not use {} for CosyVoice2 initialization!'.format(model_dir)
         self.frontend = CosyVoiceFrontEnd(configs['get_tokenizer'],
                                           configs['feat_extractor'],

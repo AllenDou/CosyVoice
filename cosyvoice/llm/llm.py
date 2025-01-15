@@ -38,6 +38,7 @@ class TransformerLM(torch.nn.Module):
             spk_embed_dim: int = 192,
     ):
         super().__init__()
+        #import pdb; pdb.set_trace()
         self.llm_input_size = llm_input_size
         self.speech_token_size = speech_token_size
         # 1. build text token inputs related modules
@@ -222,6 +223,7 @@ class TransformerLM(torch.nn.Module):
 class Qwen2Encoder(torch.nn.Module):
     def __init__(self, pretrain_path):
         super().__init__()
+        #import pdb; pdb.set_trace()
         self.model = Qwen2ForCausalLM.from_pretrained(pretrain_path)
 
     def forward_one_step(self, xs, masks, cache=None):
@@ -277,6 +279,7 @@ class Qwen2LM(torch.nn.Module):
         )
 
         # 3. [Optional] build speech token related modules
+        #import pdb; pdb.set_trace()
         self.speech_embedding = torch.nn.Embedding(speech_token_size + 3, llm_input_size)
 
         # 4. sampling method
@@ -339,17 +342,16 @@ class Qwen2LM(torch.nn.Module):
         out_tokens = []
         cache = None
         for i in range(max_len):
-            # self.llm = Qwen2Encoder()
             import time
             start_time_forward_one_step = time.time()
-            #import pdb; pdb.set_trace()
+            # self.llm = Qwen2Encoder()
             y_pred, cache = self.llm.forward_one_step(
                 lm_input,
                 masks=torch.tril(torch.ones((1, lm_input.shape[1], lm_input.shape[1]), device=lm_input.device)).to(torch.bool),
                 cache=cache)
 
             end_time_forward_one_step = time.time()
-            print(f"forward_one_step time: {end_time_forward_one_step - start_time_forward_one_step}")
+            #import pdb; pdb.set_trace()
             # self.llm_decoder = Linear()
             logp = self.llm_decoder(y_pred[:, -1]).log_softmax(dim=-1)
             top_ids = self.sampling_ids(logp.squeeze(dim=0), out_tokens, sampling, ignore_eos=True if i < min_len else False).item()
@@ -361,3 +363,6 @@ class Qwen2LM(torch.nn.Module):
             yield top_ids
             out_tokens.append(top_ids)
             lm_input = self.speech_embedding.weight[top_ids].reshape(1, 1, -1)
+            end_time_forward_one_step_other = time.time()
+            print(f"forward_one_step time: {end_time_forward_one_step - start_time_forward_one_step}, \
+                  forward_one_step_time_other: {end_time_forward_one_step_other - end_time_forward_one_step} ")
