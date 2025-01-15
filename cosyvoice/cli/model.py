@@ -102,6 +102,7 @@ class CosyVoiceModel:
             #import pdb; pdb.set_trace()
             import time
             llm_time_start = time.time()
+            # self.llm = Qwen2LM
             for i in self.llm.inference(text=text.to(self.device),
                                         text_len=torch.tensor([text.shape[1]], dtype=torch.int32).to(self.device),
                                         prompt_text=prompt_text.to(self.device),

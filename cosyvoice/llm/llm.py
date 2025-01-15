@@ -231,6 +231,7 @@ class Qwen2Encoder(torch.nn.Module):
         #bb = bb.unsqueeze(0)
 
         #import pdb; pdb.set_trace()
+        # self.model = Qwen2ForCausalLM() 这个是hf的class
         outs = self.model(
             inputs_embeds=xs,
             attention_mask=input_masks,
@@ -312,6 +313,7 @@ class Qwen2LM(torch.nn.Module):
             max_token_text_ratio: float = 20,
             min_token_text_ratio: float = 2,
     ) -> Generator[torch.Tensor, None, None]:
+        #import pdb; pdb.set_trace()
         device = text.device
         text = torch.concat([prompt_text, text], dim=1)
         text_len += prompt_text_len
@@ -337,9 +339,18 @@ class Qwen2LM(torch.nn.Module):
         out_tokens = []
         cache = None
         for i in range(max_len):
-            y_pred, cache = self.llm.forward_one_step(lm_input,
-                                                      masks=torch.tril(torch.ones((1, lm_input.shape[1], lm_input.shape[1]), device=lm_input.device)).to(torch.bool),
-                                                      cache=cache)
+            # self.llm = Qwen2Encoder()
+            import time
+            start_time_forward_one_step = time.time()
+            #import pdb; pdb.set_trace()
+            y_pred, cache = self.llm.forward_one_step(
+                lm_input,
+                masks=torch.tril(torch.ones((1, lm_input.shape[1], lm_input.shape[1]), device=lm_input.device)).to(torch.bool),
+                cache=cache)
+
+            end_time_forward_one_step = time.time()
+            print(f"forward_one_step time: {end_time_forward_one_step - start_time_forward_one_step}")
+            # self.llm_decoder = Linear()
             logp = self.llm_decoder(y_pred[:, -1]).log_softmax(dim=-1)
             top_ids = self.sampling_ids(logp.squeeze(dim=0), out_tokens, sampling, ignore_eos=True if i < min_len else False).item()
             if top_ids == self.speech_token_size:
