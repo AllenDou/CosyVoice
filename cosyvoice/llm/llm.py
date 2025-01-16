@@ -38,7 +38,6 @@ class TransformerLM(torch.nn.Module):
             spk_embed_dim: int = 192,
     ):
         super().__init__()
-        #import pdb; pdb.set_trace()
         self.llm_input_size = llm_input_size
         self.speech_token_size = speech_token_size
         # 1. build text token inputs related modules
@@ -223,7 +222,6 @@ class TransformerLM(torch.nn.Module):
 class Qwen2Encoder(torch.nn.Module):
     def __init__(self, pretrain_path):
         super().__init__()
-        #import pdb; pdb.set_trace()
         self.model = Qwen2ForCausalLM.from_pretrained(pretrain_path)
 
     def forward_one_step(self, xs, masks, cache=None):
@@ -232,7 +230,6 @@ class Qwen2Encoder(torch.nn.Module):
         #bb = torch.ones(154, dtype=torch.bool).cuda()
         #bb = bb.unsqueeze(0)
 
-        #import pdb; pdb.set_trace()
         # self.model = Qwen2ForCausalLM() 这个是hf的class
         outs = self.model(
             inputs_embeds=xs,
@@ -279,10 +276,10 @@ class Qwen2LM(torch.nn.Module):
         )
 
         # 3. [Optional] build speech token related modules
-        #import pdb; pdb.set_trace()
         self.speech_embedding = torch.nn.Embedding(speech_token_size + 3, llm_input_size)
 
         # 4. sampling method
+        #import pdb; pdb.set_trace()
         self.sampling = sampling
 
     def sampling_ids(
