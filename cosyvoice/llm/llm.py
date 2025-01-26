@@ -313,30 +313,110 @@ class Qwen2LM(torch.nn.Module):
             max_token_text_ratio: float = 20,
             min_token_text_ratio: float = 2,
     ) -> Generator[torch.Tensor, None, None]:
+        out_tokens = []
+        from openai import OpenAI
+        openai_api_key = "EMPTY"
+        openai_api_base = "http://localhost:8000/v1"
+
+        client = OpenAI(
+            # defaults to os.environ.get("OPENAI_API_KEY")
+            api_key=openai_api_key,
+            base_url=openai_api_base,
+        )
+
         #import pdb; pdb.set_trace()
-        device = text.device
-        text = torch.concat([prompt_text, text], dim=1)
-        text_len += prompt_text_len
-        text = self.llm.model.model.embed_tokens(text)
+        #device = text.device
+        #text = torch.concat([prompt_text, text], dim=1)
+        #text_len += prompt_text_len
+        #text = self.llm.model.model.embed_tokens(text)
 
         # 2. encode embedding
-        embedding = torch.zeros(1, 0, self.llm_input_size, dtype=text.dtype).to(device).to(text.dtype)
+        #embedding = torch.zeros(1, 0, self.llm_input_size, dtype=text.dtype).to(device).to(text.dtype)
 
         # 3. concat llm_input
-        sos_eos_emb = self.llm_embedding.weight[self.sos_eos].reshape(1, 1, -1)
-        task_id_emb = self.llm_embedding.weight[self.task_id].reshape(1, 1, -1)
-        if prompt_speech_token_len != 0:
-            prompt_speech_token_emb = self.speech_embedding(prompt_speech_token)
-        else:
-            prompt_speech_token_emb = torch.zeros(1, 0, self.llm_input_size, dtype=text.dtype).to(device)
-        lm_input = torch.concat([sos_eos_emb, embedding, text, task_id_emb, prompt_speech_token_emb], dim=1)
+        #sos_eos_emb = self.llm_embedding.weight[self.sos_eos].reshape(1, 1, -1)
+        #task_id_emb = self.llm_embedding.weight[self.task_id].reshape(1, 1, -1)
+        #if prompt_speech_token_len != 0:
+        #    prompt_speech_token_emb = self.speech_embedding(prompt_speech_token)
+        #else:
+        #    prompt_speech_token_emb = torch.zeros(1, 0, self.llm_input_size, dtype=text.dtype).to(device)
+        #lm_input = torch.concat([sos_eos_emb, embedding, text, task_id_emb, prompt_speech_token_emb], dim=1)
 
         # 4. cal min/max_length
-        min_len = int((text_len - prompt_text_len) * min_token_text_ratio)
-        max_len = int((text_len - prompt_text_len) * max_token_text_ratio)
+        #min_len = int((text_len - prompt_text_len) * min_token_text_ratio)
+        #max_len = int((text_len - prompt_text_len) * max_token_text_ratio)
+
+        sos_eos = [0]
+        sos_eos_len = 1
+        embedding = []
+        embedding_len = 0
+        task_id = [1]
+        task_id_len = 1
+        image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+
+        messages=[{
+            "model_type": "qwen2lm",
+            "min_tokens": 100,
+            "stop_token_ids": [6561],
+            "role": "user",
+            "prompt_token_ids": sos_eos + embedding + prompt_text.flatten().tolist() + 
+            text.flatten().tolist() + task_id + prompt_speech_token.flatten().tolist(),
+            "sos_eos_emb_len": sos_eos_len,
+            "embedding_len": embedding_len,
+            "prompt_text_len": prompt_text_len.item(),
+            "text_len": text_len.item(),
+            "task_id_emb_len": task_id_len,
+            "prompt_speech_token_len": prompt_speech_token_len.item(),
+            "token_id_as_text" : True,
+            "content": [
+                {
+                    "type": "text",
+                    "text": "What's in this image?XXXX"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": image_url
+                    },
+                },
+            ],
+        }]
+        #import pdb; pdb.set_trace()
+        stream = client.chat.completions.create(
+            model='modelx',
+            messages=messages,
+            max_completion_tokens=1000,
+            temperature=0.0,
+            stream=True,
+        )
+        chunks: List[str] = []
+        finish_reason_count = 0
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+            if delta.role:
+                assert delta.role == "assistant"
+            if delta.content:
+                chunks.append(delta.content)
+            if chunk.choices[0].finish_reason is not None:
+                finish_reason_count += 1
+            #import pdb; pdb.set_trace()
+            if delta.content == '':
+                pass
+            else:
+                top_ids = int(delta.content)
+                yield top_ids
+                out_tokens.append(top_ids)
+        # finish reason should only return in last block
+        #import pdb; pdb.set_trace()
+        #assert finish_reason_count == 1
+        #assert chunk.choices[0].finish_reason == stop_reason
+        #assert delta.content
+        #assert "".join(chunks) == output
+        #import pdb; pdb.set_trace()
+        return
+
 
         # 5. step by step decode
-        out_tokens = []
         cache = None
         for i in range(max_len):
             import time
