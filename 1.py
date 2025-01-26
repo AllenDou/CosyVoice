@@ -10,7 +10,7 @@ cosyvoice = CosyVoice2('/root/zixiao/cosyvoice_pretrained_models/CosyVoice2-0.5B
 # zero_shot usage
 prompt_speech_16k = load_wav('./asset/zero_shot_prompt.wav', 16000)
 #prompt_speech_16k = load_wav('cross_lingual_prompt.wav', 16000)
-for i, j in enumerate(cosyvoice.inference_zero_shot('北京天气, 收到好友从远方寄来的生日礼物，那份意外的惊喜与深深的祝福让我心中充满了甜蜜的快乐，笑容如花儿般绽放。', '希望你以后能够做的比我还好呦。', prompt_speech_16k, stream=False)):
+for i, j in enumerate(cosyvoice.inference_zero_shot('端午好, 收到好友从远方寄来的生日礼物，那份意外的惊喜与深深的祝福让我心中充满了甜蜜的快乐，笑容如花儿般绽放。', '希望你以后能够做的比我还好呦。', prompt_speech_16k, stream=False)):
     torchaudio.save('zero_shot_{}.wav'.format(i), j['tts_speech'], cosyvoice.sample_rate)
 
 sys.exit()

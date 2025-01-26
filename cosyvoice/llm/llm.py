@@ -368,18 +368,18 @@ class Qwen2LM(torch.nn.Module):
             "task_id_emb_len": task_id_len,
             "prompt_speech_token_len": prompt_speech_token_len.item(),
             "token_id_as_text" : True,
-            "content": [
-                {
-                    "type": "text",
-                    "text": "What's in this image?XXXX"
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": image_url
-                    },
-                },
-            ],
+            #"content": [
+            #    {
+            #        "type": "text",
+            #        "text": "What's in this image?XXXX"
+            #    },
+            #    {
+            #        "type": "image_url",
+            #        "image_url": {
+            #            "url": image_url
+            #        },
+            #    },
+            #],
         }]
         #import pdb; pdb.set_trace()
         import time
