@@ -382,6 +382,8 @@ class Qwen2LM(torch.nn.Module):
             ],
         }]
         #import pdb; pdb.set_trace()
+        import time
+        start_time = time.time()
         stream = client.chat.completions.create(
             model='modelx',
             messages=messages,
@@ -393,6 +395,9 @@ class Qwen2LM(torch.nn.Module):
         finish_reason_count = 0
         for chunk in stream:
             delta = chunk.choices[0].delta
+            end_time = time.time()
+            print(f"{end_time - start_time=}")
+            start_time = end_time
             if delta.role:
                 assert delta.role == "assistant"
             if delta.content:
