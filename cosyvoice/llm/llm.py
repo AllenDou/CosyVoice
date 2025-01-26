@@ -361,5 +361,5 @@ class Qwen2LM(torch.nn.Module):
             out_tokens.append(top_ids)
             lm_input = self.speech_embedding.weight[top_ids].reshape(1, 1, -1)
             end_time_forward_one_step_other = time.time()
-            print(f"forward_one_step time: {end_time_forward_one_step - start_time_forward_one_step}, \
-                  forward_one_step_time_other: {end_time_forward_one_step_other - end_time_forward_one_step} ")
+            #print(f"forward_one_step time: {end_time_forward_one_step - start_time_forward_one_step}, \
+            #      forward_one_step_time_other: {end_time_forward_one_step_other - end_time_forward_one_step} ")
