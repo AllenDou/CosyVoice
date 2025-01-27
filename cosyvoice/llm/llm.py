@@ -324,7 +324,6 @@ class Qwen2LM(torch.nn.Module):
             base_url=openai_api_base,
         )
 
-        #import pdb; pdb.set_trace()
         #device = text.device
         #text = torch.concat([prompt_text, text], dim=1)
         #text_len += prompt_text_len
@@ -346,6 +345,7 @@ class Qwen2LM(torch.nn.Module):
         #min_len = int((text_len - prompt_text_len) * min_token_text_ratio)
         #max_len = int((text_len - prompt_text_len) * max_token_text_ratio)
 
+        #import pdb; pdb.set_trace()
         sos_eos = [0]
         sos_eos_len = 1
         embedding = []
