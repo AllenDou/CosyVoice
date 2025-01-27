@@ -6,7 +6,7 @@ import torchaudio
 
 cosyvoice = CosyVoice2('/root/zixiao/cosyvoice_pretrained_models/CosyVoice2-0.5B', load_jit=False, load_trt=False, fp16=False)
 
-prefix='春节好, '
+prefix='北京你好, '
 
 # NOTE if you want to reproduce the results on https://funaudiollm.github.io/cosyvoice2, please add text_frontend=False during inference
 # zero_shot usage

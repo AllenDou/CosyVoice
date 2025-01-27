@@ -20,6 +20,7 @@ from torch.nn.utils.rnn import pad_sequence, unpad_sequence
 from cosyvoice.utils.common import IGNORE_ID
 from cosyvoice.transformer.label_smoothing_loss import LabelSmoothingLoss
 from cosyvoice.utils.common import th_accuracy
+from openai import OpenAI
 
 
 class TransformerLM(torch.nn.Module):
@@ -281,6 +282,15 @@ class Qwen2LM(torch.nn.Module):
         # 4. sampling method
         #import pdb; pdb.set_trace()
         self.sampling = sampling
+        
+        openai_api_key = "EMPTY"
+        openai_api_base = "http://localhost:8000/v1"
+
+        self.client = OpenAI(
+            # defaults to os.environ.get("OPENAI_API_KEY")
+            api_key=openai_api_key,
+            base_url=openai_api_base,
+        )
 
     def sampling_ids(
             self,
@@ -314,15 +324,6 @@ class Qwen2LM(torch.nn.Module):
             min_token_text_ratio: float = 2,
     ) -> Generator[torch.Tensor, None, None]:
         out_tokens = []
-        from openai import OpenAI
-        openai_api_key = "EMPTY"
-        openai_api_base = "http://localhost:8000/v1"
-
-        client = OpenAI(
-            # defaults to os.environ.get("OPENAI_API_KEY")
-            api_key=openai_api_key,
-            base_url=openai_api_base,
-        )
 
         #device = text.device
         #text = torch.concat([prompt_text, text], dim=1)
@@ -384,7 +385,7 @@ class Qwen2LM(torch.nn.Module):
         #import pdb; pdb.set_trace()
         import time
         start_time = time.time()
-        stream = client.chat.completions.create(
+        stream = self.client.chat.completions.create(
             model='modelx',
             messages=messages,
             max_completion_tokens=1000,
