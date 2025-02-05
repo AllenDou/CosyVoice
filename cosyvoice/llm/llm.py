@@ -532,6 +532,6 @@ class Qwen2LM(TransformerLM):
             # in stream mode, yield token one by one
             yield top_ids
             lm_input = self.speech_embedding.weight[top_ids].reshape(1, 1, -1)
-            end_time_forward_one_step_other = time.time()
+            #end_time_forward_one_step_other = time.time()
             #print(f"forward_one_step time: {end_time_forward_one_step - start_time_forward_one_step}, \
             #      forward_one_step_time_other: {end_time_forward_one_step_other - end_time_forward_one_step} ")

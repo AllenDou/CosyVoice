@@ -25,3 +25,12 @@ for i, j in enumerate(cosyvoice.inference_cross_lingual(prefix + '在他讲述�
 for i, j in enumerate(cosyvoice.inference_instruct2(prefix + '收到好友从远方寄来的生日礼物，那份意外的惊喜与深深的祝福让我心中充满了甜蜜的快乐，笑容如花儿般绽放。', '用四川话说这句话', prompt_speech_16k, stream=False)):
     torchaudio.save('instruct_{}.wav'.format(i), j['tts_speech'], cosyvoice.sample_rate)
 
+def text_generator():
+    yield prefix
+    yield '收到好友从远方寄来的生日礼物，'
+    yield '那份意外的惊喜与深深的祝福'
+    yield '让我心中充满了甜蜜的快乐，'
+    yield '笑容如花儿般绽放。'
+for i, j in enumerate(cosyvoice.inference_zero_shot(text_generator(), '希望你以后能够做的比我还好呦。', prompt_speech_16k, stream=False)):
+    torchaudio.save('zero_shot2_{}.wav'.format(i), j['tts_speech'], cosyvoice.sample_rate)
+
