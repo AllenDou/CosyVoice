@@ -55,6 +55,7 @@ class CosyVoiceFrontEnd:
         self.speech_tokenizer_session = onnxruntime.InferenceSession(speech_tokenizer_model, sess_options=option,
                                                                      providers=["CUDAExecutionProvider" if torch.cuda.is_available() else
                                                                                 "CPUExecutionProvider"])
+        #import pdb; pdb.set_trace()
         if os.path.exists(spk2info):
             self.spk2info = torch.load(spk2info, map_location=self.device)
         else:
@@ -64,7 +65,9 @@ class CosyVoiceFrontEnd:
         if self.use_ttsfrd:
             self.frd = ttsfrd.TtsFrontendEngine()
             ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-            assert self.frd.initialize('{}/../../pretrained_models/CosyVoice-ttsfrd/resource'.format(ROOT_DIR)) is True, \
+            print(f"{ROOT_DIR=}")
+            #assert self.frd.initialize('{}/../../pretrained_models/CosyVoice-ttsfrd/resource'.format(ROOT_DIR)) is True, \
+            assert self.frd.initialize('/nasmnt/cosyvoice_pretrained_models/CosyVoice-ttsfrd/resource') is True, \
                 'failed to initialize ttsfrd resource'
             self.frd.set_lang_type('pinyinvg')
         else:

@@ -21,6 +21,7 @@ from cosyvoice.utils.common import IGNORE_ID
 from cosyvoice.transformer.label_smoothing_loss import LabelSmoothingLoss
 from cosyvoice.utils.common import th_accuracy
 from cosyvoice.utils.file_utils import logging
+from openai import OpenAI
 
 
 class TransformerLM(torch.nn.Module):
@@ -231,6 +232,11 @@ class Qwen2Encoder(torch.nn.Module):
 
     def forward_one_step(self, xs, masks, cache=None):
         input_masks = masks[:, -1, :]
+        #aa = torch.rand(size=(1, 154, 896)).cuda()
+        #bb = torch.ones(154, dtype=torch.bool).cuda()
+        #bb = bb.unsqueeze(0)
+
+        # self.model = Qwen2ForCausalLM() 这个是hf的class
         outs = self.model(
             inputs_embeds=xs,
             attention_mask=input_masks,
@@ -280,8 +286,17 @@ class Qwen2LM(TransformerLM):
         self.speech_embedding = torch.nn.Embedding(speech_token_size + 3, llm_input_size)
 
         # 4. sampling method
+        #import pdb; pdb.set_trace()
         self.sampling = sampling
         self.mix_ratio = mix_ratio
+        openai_api_key = "EMPTY"
+        openai_api_base = "http://localhost:8000/v1"
+
+        self.client = OpenAI(
+            # defaults to os.environ.get("OPENAI_API_KEY")
+            api_key=openai_api_key,
+            base_url=openai_api_base,
+        )
 
     @torch.inference_mode()
     def inference(
@@ -297,31 +312,116 @@ class Qwen2LM(TransformerLM):
             max_token_text_ratio: float = 20,
             min_token_text_ratio: float = 2,
     ) -> Generator[torch.Tensor, None, None]:
-        device = text.device
-        text = torch.concat([prompt_text, text], dim=1)
-        text_len += prompt_text_len
-        text = self.llm.model.model.embed_tokens(text)
+        out_tokens = []
+
+        #device = text.device
+        #text = torch.concat([prompt_text, text], dim=1)
+        #text_len += prompt_text_len
+        #text = self.llm.model.model.embed_tokens(text)
 
         # 3. concat llm_input
-        sos_eos_emb = self.llm_embedding.weight[self.sos_eos].reshape(1, 1, -1)
-        task_id_emb = self.llm_embedding.weight[self.task_id].reshape(1, 1, -1)
-        if prompt_speech_token_len != 0:
-            prompt_speech_token_emb = self.speech_embedding(prompt_speech_token)
-        else:
-            prompt_speech_token_emb = torch.zeros(1, 0, self.llm_input_size, dtype=text.dtype).to(device)
-        lm_input = torch.concat([sos_eos_emb, text, task_id_emb, prompt_speech_token_emb], dim=1)
+        #sos_eos_emb = self.llm_embedding.weight[self.sos_eos].reshape(1, 1, -1)
+        #task_id_emb = self.llm_embedding.weight[self.task_id].reshape(1, 1, -1)
+        #if prompt_speech_token_len != 0:
+        #    prompt_speech_token_emb = self.speech_embedding(prompt_speech_token)
+        #else:
+        #    prompt_speech_token_emb = torch.zeros(1, 0, self.llm_input_size, dtype=text.dtype).to(device)
+        #lm_input = torch.concat([sos_eos_emb, text, task_id_emb, prompt_speech_token_emb], dim=1)
 
         # 4. cal min/max_length
-        min_len = int((text_len - prompt_text_len) * min_token_text_ratio)
-        max_len = int((text_len - prompt_text_len) * max_token_text_ratio)
+        #min_len = int((text_len - prompt_text_len) * min_token_text_ratio)
+        #max_len = int((text_len - prompt_text_len) * max_token_text_ratio)
+
+        #import pdb; pdb.set_trace()
+        sos_eos = [0]
+        sos_eos_len = 1
+        embedding = []
+        embedding_len = 0
+        task_id = [1]
+        task_id_len = 1
+        image_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+
+        messages=[{
+            "model_type": "qwen2lm",
+            "min_tokens": 100,
+            "stop_token_ids": [6561],
+            "role": "user",
+            "prompt_token_ids": sos_eos + embedding + prompt_text.flatten().tolist() + 
+            text.flatten().tolist() + task_id + prompt_speech_token.flatten().tolist(),
+            "sos_eos_emb_len": sos_eos_len,
+            "embedding_len": embedding_len,
+            "prompt_text_len": prompt_text_len.item(),
+            "text_len": text_len.item(),
+            "task_id_emb_len": task_id_len,
+            "prompt_speech_token_len": prompt_speech_token_len.item(),
+            "token_id_as_text" : True,
+            #"content": [
+            #    {
+            #        "type": "text",
+            #        "text": "What's in this image?XXXX"
+            #    },
+            #    {
+            #        "type": "image_url",
+            #        "image_url": {
+            #            "url": image_url
+            #        },
+            #    },
+            #],
+        }]
+        #import pdb; pdb.set_trace()
+        import time
+        start_time = time.time()
+        stream = self.client.chat.completions.create(
+            model='modelx',
+            messages=messages,
+            max_completion_tokens=1000,
+            temperature=0.0,
+            stream=True,
+        )
+        chunks: List[str] = []
+        finish_reason_count = 0
+        for chunk in stream:
+            delta = chunk.choices[0].delta
+            end_time = time.time()
+            print(f"{end_time - start_time=}")
+            start_time = end_time
+            if delta.role:
+                assert delta.role == "assistant"
+            if delta.content:
+                chunks.append(delta.content)
+            if chunk.choices[0].finish_reason is not None:
+                finish_reason_count += 1
+            #import pdb; pdb.set_trace()
+            if delta.content == '':
+                pass
+            else:
+                top_ids = int(delta.content)
+                yield top_ids
+                out_tokens.append(top_ids)
+        # finish reason should only return in last block
+        #import pdb; pdb.set_trace()
+        #assert finish_reason_count == 1
+        #assert chunk.choices[0].finish_reason == stop_reason
+        #assert delta.content
+        #assert "".join(chunks) == output
+        #import pdb; pdb.set_trace()
+        return
+
 
         # 5. step by step decode
-        out_tokens = []
         cache = None
         for i in range(max_len):
-            y_pred, cache = self.llm.forward_one_step(lm_input,
-                                                      masks=torch.tril(torch.ones((1, lm_input.shape[1], lm_input.shape[1]), device=lm_input.device)).to(torch.bool),
-                                                      cache=cache)
+            import time
+            start_time_forward_one_step = time.time()
+            # self.llm = Qwen2Encoder()
+            y_pred, cache = self.llm.forward_one_step(
+                lm_input,
+                masks=torch.tril(torch.ones((1, lm_input.shape[1], lm_input.shape[1]), device=lm_input.device)).to(torch.bool),
+                cache=cache)
+
+            end_time_forward_one_step = time.time()
+            #import pdb; pdb.set_trace()
+            # self.llm_decoder = Linear()
             logp = self.llm_decoder(y_pred[:, -1]).log_softmax(dim=-1)
             top_ids = self.sampling_ids(logp.squeeze(dim=0), out_tokens, sampling, ignore_eos=True if i < min_len else False).item()
             if top_ids == self.speech_token_size:
@@ -432,3 +532,6 @@ class Qwen2LM(TransformerLM):
             # in stream mode, yield token one by one
             yield top_ids
             lm_input = self.speech_embedding.weight[top_ids].reshape(1, 1, -1)
+            end_time_forward_one_step_other = time.time()
+            #print(f"forward_one_step time: {end_time_forward_one_step - start_time_forward_one_step}, \
+            #      forward_one_step_time_other: {end_time_forward_one_step_other - end_time_forward_one_step} ")
